@@ -14,6 +14,18 @@ v2.0 raw
 # read_key:
 # load r18, 0xFEFF(r0)
 #
+#
+#
+# comparacao(r4=1, r5=2, r6=4, r7=8)
+# beq r18, r4, #endereçofodasedasilva (se a pessoa tiver apertado esquerda que é 1)
+# 
+# endereçofodasedasilva:
+# subi r16, r16, 1
+#
+# jal endereço de (acender_pixel)
+#
+#
+#
 # =========================================
 #
 # acender_pixel(r6 = cor; r4 = X; r5 = Y): 
@@ -24,11 +36,12 @@ v2.0 raw
 #
 # -------
 # pra chamar acender_pixel eu tenho que setar os parametros
-# p jogador:
+# pos_jogador: (TRANSFORMEI NUMA FUNCAO)
 # add r4, r16, r0
 # add r5, r17, r0
 # addi r6, r0, 1
-# e aí faz jal endereço de (acender_pixel)
+# jr
+#
 #
 # p comida:
 # load r19, 0xFEFE (r0)
@@ -40,7 +53,7 @@ v2.0 raw
 #
 # =========================================
 #
-#
+# beq 
 #
 #
 #
