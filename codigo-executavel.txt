@@ -1,0 +1,276 @@
+v2.0 raw
+
+# Inicialização (0-6)
+38100004        # LI $s0, 4          
+38110004        # LI $s1, 4          
+38120002        # LI $s2, 2        
+38130002        # LI $s3, 2          
+38140100        # LI $s4, 256       
+38150000        # LI $s5, 0          
+38160004        # LI $s6, 4     
+
+# Definição da cobrinha (7-10)
+3E040000        # MOVE $a0, $s0     
+3E250000        # MOVE $a1, $s1   
+38060001        # LI $a2, 1                 
+30000050        # JAL write_grid (linha 80) 
+
+# Definição da comida (11-14)
+3E440000        # MOVE $a0, $s2
+3E650000        # MOVE $a1, $s3
+38060001        # LI $a2, 1
+30000050        # JAL write_grid 
+
+# Loop do jogo (15-24)
+00000000        # JAL DELAY (linha 87)  
+3808FEFF        # LI $t0, FEFF
+19090000        # LW $t1, 0($t0)   0001 1001 0000 1001 0000 0000 0000 0000
+040D0008        # ADDI $t5, $zero, 8  
+040E0004        # ADDI $t6, $zero, 4  esquerda (invertido, original: 1)
+040F0002        # ADDI $t7, $zero, 2 
+04180001        # ADDI $t8, $zero, 1 direita(invertido, original: 4)
+25200001	    # BEQ $t1, $zero, 1
+         
+3D360000        # MOVE $s6, $t1 (update dir)     0011 1101 0011 0110 
+20000019        # JUMP MOVIMENTO (linha 25)
+
+# Movimento (25-30)
+3E0A0000        # MOVE $t2, $s0		
+3E2B0000        # MOVE $t3, $s1                                   
+
+26CE0003        # BEQ $s6, $t6,  esquerda (linha 31) 
+26CF0005        # BEQ $s6, $t7, baixo (linha 34)
+26D80008        # BEQ $s6, $t8, direita (linha 38)  
+26CD000B        # BEQ $s6, $t5, cima (linha 41)           
+
+#esquerda (32-34)                                                  
+094A0001        # SUBI $t2, $t2, 1   0000 1001 0100 1010 0000 0000 0000 0001
+4140000C        # BLT $t2, $0, wrap_x (linha 45)       
+20000035        # JUMP VERIFICAR SE COMEU (linha 52) 
+
+#baixo (35-38)
+056B0001        # ADDI $t3, $t3, 1 0000 0101 0110 1011 
+04190010	    # ADDI $t9, $0, 16    
+2579000E        # BEQ $t3, $t9, wrap_y_0 (linha 51) 0010 0101 0111 1001
+20000035        # JUMP VERIFICAR SE COMEU
+
+#direita (39-42)
+054A0001        # ADDI $t2, $t2, 1
+04190010	    # ADDI $t9, $0, 16    
+25590006        # BEQ $t2, $t9, wrap_x_0  (linha 46) 0010 0101 0101 1001 0000 0000 0000 0110
+20000035        # JUMP VERIFICAR SE COMEU
+
+#cima (42-44)
+096B0001        # SUBI $t3, $t3, 1 0000 1001 0110 1011 0000 0000 0000 0001
+41600005        # BLT $t3, $0, $zero, wrap_y  (linha 48) 
+20000035        # JUMP VERIFICAR SE COMEU
+
+# wrap_x:(45-46)
+380A000F        # LI $t2, 15   		
+20000035        # JUMP VERIFICAR SE COMEU
+
+# wrap_x_0: (47-48)
+380A0000        # LI $t2, 0    0011 1000 0000 1010       
+20000035        # JUMP VERIFICAR SE COMEU
+
+# wrap_y: (49-50)
+380B000F        # LI $t3, 15     0011 1000 0000 1011
+20000035        # JUMP VERIFICAR SE COMEU
+
+# wrap_y_0: (51-52)
+380B0000        # LI $t3, 0         
+20000035        # JUMP VERIFICAR SE COMEU
+
+# Verificar se comeu (53-54)
+2952000B        # BNE $t2, $s2, ATUALIZAR POSIÇÃO (linha 68)   001010 010101 0010
+2973000A        # BNE $t3, $s3, ATUALIZAR POSIÇÃO (linha 68)   0010 1001 0111 0011
+
+# Score e Delay (55-56)
+06B50001        # ADDI $s5, $s5, 1      0000 0110 1011 0101
+00000000        # DIVI $s4, $s4, 2        
+
+# Nova Comida (57-60)
+30000055        # JAL random_position      
+3C520000        # MOVE $s2, $v0     0011 1100 0101 0010     
+30000055        # JAL random_position 
+3C530000        # MOVE $s3, $v0     0011 1100 0101 0011
+
+# Desenha Maçã (61-64)
+3E440000        # MOVE $a0, $s2
+3E650000        # MOVE $a1, $s3
+38060001        # LI $a2, 1
+30000050        # JAL write_grid 
+
+# Apaga a cauda (desenha BLACK na posição antiga) (65-68)
+3E040000        # MOVE $a0, $s0     
+3E250000        # MOVE $a1, $s1  
+38060000        # LI $a2, 0
+30000050        # JAL write_grid
+
+# Atualiza posição atual com a nova posição calculada (69-70)
+3D500000        # MOVE $s0, $t2 
+3D710000        # MOVE $s1, $t3    0011 1101 0111 0001
+
+# Desenha a cabeça na nova posição (70-73)
+3E040000        # MOVE $a0, $s0     
+3E250000        # MOVE $a1, $s1  
+38060001        # LI $a2, 1
+30000050        # JAL write_grid
+
+# Checa se score ($s5) == 5 (74-75)
+38090005        # LI $t1, 5         0011 1000 0000 1001 0000 0000 0000 00101
+26A90001        # BEQ $s5, $t1, 2 (linha 77)   (Pula para end_game) 0010 0110 1010 1001
+
+# Retorna ao início do loop (76)
+2000000F        # JUMP LOOP DO JOGO (linha 15)
+
+# end_game: (77-78)
+3804000A        # LI $v0, 10        
+2000005C        # JUMP fim (pula pro fim do codigo)        
+
+
+#FUNÇÃO WRITE_GRID (79-83)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBF0000	# STORE $ra, 0($sp)		
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBE0000	# STORE $fp, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4 
+#1FB00000	# STORE $s0, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB10000	# STORE $s1, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB20000	# STORE $s2, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB30000	# STORE $s3, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB40000	# STORE $s4, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB50000	# STORE $s5, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB60000	# STORE $s6, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4  
+#1FB70000	# STORE $s7, 0($sp)
+
+0CA80010        # MULTI $t0, $a1, 16  (Y * 16) 0000 1100 1010 1000  00 1 0 000
+01044000        # ADD $t0, $t0, $a0  ( + X)  0000 0001 0000 0100 0100 0000 0000 0000
+0508FF00        # ADDI $t0, $t0, FF00  (Base Address) 0000 0101 0000 1000 
+1D060000        # STORE $a2, 0($t0)  (Escreve a cor no grid)  0001 1101 0000 0110 0000
+
+#1BB70000 	# LOAD $s7, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB60000	# LOAD $s6, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB50000	# LOAD $s5, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 	
+#1BB40000	# LOAD $s4, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB30000	# LOAD $s3, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB20000	# LOAD $s2, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB10000	# LOAD $s1, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB00000	# LOAD $s0, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BBE0000	# LOAD $fp, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BBF0000	# LOAD $ra, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+37F00000	# JR $ra          
+
+#FUNÇÃO POSIÇÃO ALEATÓRIA (random_position) (84-86) 
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBF0000	# STORE $ra, 0($sp)		
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBE0000	# STORE $fp, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4 
+#1FB00000	# STORE $s0, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB10000	# STORE $s1, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB20000	# STORE $s2, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB30000	# STORE $s3, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB40000	# STORE $s4, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB50000	# STORE $s5, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB60000	# STORE $s6, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4  
+#1FB70000	# STORE $s7, 0($sp)
+
+180DFEFE	# LW $t5, FEFE ($0)		0001 1000 0000 1101 1111 1110 1111 1110
+3DA20000	# MOVE $v0, $t5		
+
+#1BB70000 	# LOAD $s7, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB60000	# LOAD $s6, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB50000	# LOAD $s5, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 	
+#1BB40000	# LOAD $s4, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB30000	# LOAD $s3, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB20000	# LOAD $s2, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB10000	# LOAD $s1, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB00000	# LOAD $s0, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BBE0000	# LOAD $fp, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BBF0000	# LOAD $ra, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+37F00000	# JR $ra
+
+
+# FUNÇÃO DO DELAY (87-91)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBF0000	# STORE $ra, 0($sp)		
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FBE0000	# STORE $fp, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4 
+#1FB00000	# STORE $s0, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB10000	# STORE $s1, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB20000	# STORE $s2, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB30000	# STORE $s3, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB40000	# STORE $s4, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB50000	# STORE $s5, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4
+#1FB60000	# STORE $s6, 0($sp)
+#07BDFFFC	# ADDI $sp, $sp, -4  
+#1FB70000	# STORE $s7, 0($sp)
+
+3E8C0000        # MOVE $t4, $s4	
+25800002	# BEQ $t4, $0, FIM 0010 01 01100 00000 0010 25800
+058CFFFF        # ADDI $t4, $t4, -1     	
+20000058        # jump beq acima
+
+#1BB70000 	# LOAD $s7, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB60000	# LOAD $s6, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB50000	# LOAD $s5, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 	
+#1BB40000	# LOAD $s4, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB30000	# LOAD $s3, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB20000	# LOAD $s2, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BB10000	# LOAD $s1, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BB00000	# LOAD $s0, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+#1BBE0000	# LOAD $fp, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4 
+#1BBF0000	# LOAD $ra, 0($sp)
+#07BD0004	# ADDI $sp, $sp, 4
+37F00000	# JR $ra
